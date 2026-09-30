@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NoiseDose - Your Daily Noise Dose</title>
+<meta name="description" content="Add the loud parts of your day and see your combined noise dose against NIOSH and OSHA limits. Runs in your browser.">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#15181f; color:#e8ebf2; line-height:1.6; }
+  .wrap { max-width:700px; margin:0 auto; padding:48px 20px 60px; }
+  .logo { font-size:46px; font-weight:800; } .logo span { color:#ff9f43; }
+  .tag { font-size:19px; margin-top:10px; color:#c6ccda; }
+  .cta { display:inline-block; margin-top:26px; background:#ff9f43; color:#15181f; font-weight:700; padding:14px 30px; border-radius:12px; text-decoration:none; }
+  h2 { font-size:21px; margin:40px 0 10px; }
+  p, li { color:#b9c0d0; margin-bottom:8px; } ul { margin-left:20px; }
+  .demo { margin-top:26px; background:#1e232d; border-radius:14px; padding:18px; }
+  .bar { height:12px; background:#12151c; border-radius:6px; overflow:hidden; margin:8px 0 14px; } .bar i { display:block; height:100%; }
+  footer { margin-top:50px; font-size:13px; color:#8a93a6; } a { color:#ff9f43; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">Noise<span>Dose</span></div>
+  <div class="tag">One loud hour does not count the same as eight quiet ones. NoiseDose adds up your whole day the way the safety limits do.</div>
+  <a class="cta" href="app.html">Calculate my dose &rarr;</a>
+  <div class="demo">
+    <div>Commute with loud earbuds</div><div class="bar"><i style="width:68%;background:#f1c40f"></i></div>
+    <div>Hour of power tools</div><div class="bar"><i style="width:100%;background:#e74c3c"></i></div>
+    <div>Quiet office day</div><div class="bar"><i style="width:9%;background:#2ecc71"></i></div>
+  </div>
+  <h2>The problem</h2>
+  <p>Hearing damage depends on loudness and time together. NIOSH says every 3 dB increase halves the safe time: 85 dBA for 8 hours, 94 dBA for 1 hour, 100 dBA for 15 minutes. Mixed days are hard to judge by feel.</p>
+  <h2>What it does</h2>
+  <ul>
+    <li>Build your day from activities with typical dBA levels, or enter your own readings</li>
+    <li>Dose as a percent of the NIOSH REL (85 dBA, 3 dB) and the OSHA PEL (90 dBA, 5 dB)</li>
+    <li>8-hour equivalent level and the biggest contributor to your dose</li>
+    <li>"How long can I stay?" for any level, given what you already had today</li>
+    <li>Runs fully in your browser, nothing is sent anywhere</li>
+  </ul>
+  <footer>Educational estimate, not medical or compliance advice. Typical dBA values are approximate. Sources: <a href="https://www.cdc.gov/niosh/noise/prevent/understand.html">NIOSH</a> &middot; <a href="https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.95">OSHA 29 CFR 1910.95</a><br>App Factory project. <a href="https://github.com/iLanis-agent/noisedose">Code</a></footer>
+</div>
+</body>
+</html>
