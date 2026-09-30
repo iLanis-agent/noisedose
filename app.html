@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NoiseDose - Your Daily Noise Dose</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#15181f; color:#e8ebf2; line-height:1.5; }
+  .wrap { max-width:760px; margin:0 auto; padding:24px 16px 60px; }
+  h1 { font-size:26px; } h1 span { color:#ff9f43; }
+  .sub { color:#9aa3b5; margin:4px 0 18px; font-size:14px; }
+  .card { background:#1e232d; border:1px solid #2b3240; border-radius:14px; padding:16px; margin-bottom:16px; }
+  .presets button, .btn { background:#2b3240; color:#e8ebf2; border:0; border-radius:8px; padding:8px 12px; cursor:pointer; font-size:13px; margin:0 6px 6px 0; }
+  .presets button:hover, .btn:hover { background:#3a4456; }
+  .row { display:grid; grid-template-columns:1fr 84px 92px 34px; gap:8px; margin-bottom:8px; align-items:center; }
+  .row input, .row select, .calc input { background:#12151c; color:#e8ebf2; border:1px solid #333c4d; border-radius:8px; padding:8px; font-size:14px; width:100%; }
+  .hdr { font-size:11px; color:#8a93a6; text-transform:uppercase; letter-spacing:.5px; }
+  .x { background:none; border:0; color:#8a93a6; font-size:18px; cursor:pointer; }
+  .gauges { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:560px){ .gauges{grid-template-columns:1fr;} .row{grid-template-columns:1fr 70px 80px 30px;} }
+  .g .name { font-size:12px; color:#9aa3b5; text-transform:uppercase; letter-spacing:.5px; }
+  .g .big { font-size:38px; font-weight:800; }
+  .bar { height:12px; background:#12151c; border-radius:6px; overflow:hidden; margin:6px 0; position:relative; }
+  .bar i { display:block; height:100%; width:0; background:#2ecc71; transition:width .25s; }
+  .bar.watch i { background:#f1c40f; } .bar.over i { background:#e74c3c; }
+  .tag { font-size:13px; } .low{color:#2ecc71;} .watch{color:#f1c40f;} .over{color:#e74c3c;}
+  .calc { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .calc input { width:90px; }
+  .note { font-size:12px; color:#8a93a6; margin-top:10px; }
+  h2 { font-size:15px; margin-bottom:10px; }
+  a { color:#ff9f43; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Noise<span>Dose</span></h1>
+  <div class="sub">Add the loud parts of your day. Get your daily noise dose against the NIOSH and OSHA limits.</div>
+
+  <div class="card">
+    <h2>Try a typical day</h2>
+    <div class="presets" id="presets"></div>
+  </div>
+
+  <div class="card">
+    <h2>Your day</h2>
+    <div class="row hdr"><div>Activity</div><div>dBA</div><div>Minutes</div><div></div></div>
+    <div id="rows"></div>
+    <button class="btn" id="add">+ Add activity</button>
+    <button class="btn" id="clear">Clear all</button>
+  </div>
+
+  <div class="card" id="result">
+    <div class="gauges">
+      <div class="g" id="gn"></div>
+      <div class="g" id="go"></div>
+    </div>
+    <div id="top" class="note"></div>
+  </div>
+
+  <div class="card">
+    <h2>How long can I stay?</h2>
+    <div class="calc">
+      <span>At</span><input type="number" id="cdb" value="95" min="40" max="140"><span>dBA, I have</span>
+      <b id="cn">-</b><span>(NIOSH) /</span><b id="co">-</b><span>(OSHA) left today.</span>
+    </div>
+  </div>
+
+  <div class="note">
+    NIOSH REL: 85 dBA for 8 hours, time halves for every 3 dB increase. OSHA PEL: 90 dBA for 8 hours, time halves for every 5 dB (29 CFR 1910.95, levels under 80 dBA ignored; 50% dose is the OSHA action level). Dose = sum of (time at level / allowed time at level). The listed dBA values are rough typical levels, not measurements: use a sound level meter or phone dosimeter app for your real sound. This is an educational estimate, not medical or compliance advice.
+    Sources: <a href="https://www.cdc.gov/niosh/noise/prevent/understand.html">NIOSH</a> &middot; <a href="https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.95">OSHA 1910.95</a>
+  </div>
+</div>
+<script src="engine.js"></script>
+<script>
+(function(){
+  var ACT = [
+    ['Custom',0],['Conversation',60],['Busy office',70],['Vacuum cleaner',75],['City traffic / bus',80],['Subway train',85],
+    ['Blender / food processor',88],['Lawn mower',90],['Earbuds, loud volume',94],['Motorcycle',95],['Power saw',100],['Concert / club',102],['Chainsaw',110]
+  ];
+  var DAYS = {
+    'Desk worker': [['Busy office',70,420],['City traffic / bus',80,60],['Conversation',60,90]],
+    'Commuter with earbuds': [['Subway train',85,50],['Earbuds, loud volume',94,90],['Busy office',70,420]],
+    'Weekend DIY': [['Power saw',100,20],['Lawn mower',90,45],['Vacuum cleaner',75,30]],
+    'Concert night': [['Concert / club',102,150],['City traffic / bus',80,40]],
+    'Construction shift': [['Chainsaw',110,10],['Power saw',100,25],['Lawn mower',90,120],['Conversation',60,60]]
+  };
+  var rows = document.getElementById('rows'), E = NoiseDose;
+  function fmtMin(m){
+    if (m === Infinity) return 'unlimited';
+    if (m < 1) return '0 min';
+    var h = Math.floor(m/60), mm = Math.round(m - h*60);
+    if (mm === 60){ h++; mm = 0; }
+    return (h? h+' h ' : '') + mm + ' min';
+  }
+  function addRow(name, db, min){
+    var d = document.createElement('div'); d.className = 'row';
+    var sel = document.createElement('select');
+    ACT.forEach(function(a){ var o = document.createElement('option'); o.value = a[1]; o.textContent = a[0] + (a[1]? ' (~'+a[1]+')' : ''); o.dataset.n = a[0]; sel.appendChild(o); });
+    var idx = 0; ACT.forEach(function(a,i){ if (a[0] === name) idx = i; }); sel.selectedIndex = idx;
+    var dbi = document.createElement('input'); dbi.type='number'; dbi.min=40; dbi.max=140; dbi.value = db || 85; dbi.className='db';
+    var mi = document.createElement('input'); mi.type='number'; mi.min=0; mi.max=1440; mi.value = (min==null? 30 : min); mi.className='mn';
+    var x = document.createElement('button'); x.className='x'; x.textContent='\u00d7'; x.title='Remove';
+    sel.onchange = function(){ if (+sel.value) dbi.value = sel.value; update(); };
+    dbi.oninput = function(){ var m = 0; ACT.forEach(function(a,i){ if (a[1] === +dbi.value) m = i; }); sel.selectedIndex = m; update(); };
+    mi.oninput = update;
+    x.onclick = function(){ d.remove(); update(); };
+    d.append(sel, dbi, mi, x); rows.appendChild(d);
+  }
+  function segs(){
+    var out = [];
+    rows.querySelectorAll('.row').forEach(function(r){
+      var s = r.querySelector('select'), nm = s.options[s.selectedIndex].dataset.n;
+      var db = parseFloat(r.querySelector('.db').value), mn = parseFloat(r.querySelector('.mn').value);
+      out.push({ name: nm === 'Custom' ? (db + ' dBA') : nm, db: db, min: mn });
+    });
+    return out;
+  }
+  var LBL = { low:'Under the limit', watch:'Approaching the limit', over:'Over the limit' };
+  function gauge(el, title, pct, twa, st, sub){
+    var w = Math.min(100, pct);
+    el.innerHTML = '<div class="name">'+title+'</div><div class="big '+st+'" data-k="pct">'+(pct<10? pct.toFixed(1) : Math.round(pct))+'%</div>' +
+      '<div class="bar '+st+'"><i style="width:'+w+'%"></i></div>' +
+      '<div class="tag '+st+'">'+LBL[st]+'</div><div class="note">'+(twa==null? 'No exposure yet' : '8-hour equivalent: '+twa.toFixed(1)+' dBA')+' &middot; '+sub+'</div>';
+  }
+  function update(){
+    var s = segs(), a = E.analyze(s);
+    gauge(document.getElementById('gn'), 'NIOSH (85 dBA / 3 dB)', a.niosh, a.nioshTWA, a.nioshStatus, 'limit = 100%');
+    gauge(document.getElementById('go'), 'OSHA (90 dBA / 5 dB)', a.osha, a.oshaTWA, a.oshaStatus, 'action level = 50%');
+    var t = document.getElementById('top');
+    t.textContent = a.top && a.niosh > 0 ? 'Biggest contributor: ' + a.top.name + ' (' + Math.round(a.topShare*100) + '% of your NIOSH dose).' : 'Add an activity to see your dose.';
+    var L = parseFloat(document.getElementById('cdb').value);
+    var good = s.filter(function(x){ return x.min > 0 && isFinite(x.db); });
+    document.getElementById('cn').textContent = isFinite(L) ? fmtMin(E.minutesLeft(good, L, E.STANDARDS.niosh)) : '-';
+    document.getElementById('co').textContent = isFinite(L) ? fmtMin(E.minutesLeft(good, L, E.STANDARDS.osha)) : '-';
+  }
+  var pr = document.getElementById('presets');
+  Object.keys(DAYS).forEach(function(k){
+    var b = document.createElement('button'); b.textContent = k;
+    b.onclick = function(){ rows.innerHTML = ''; DAYS[k].forEach(function(r){ addRow(r[0], r[1], r[2]); }); update(); };
+    pr.appendChild(b);
+  });
+  document.getElementById('add').onclick = function(){ addRow('Custom', 85, 30); update(); };
+  document.getElementById('clear').onclick = function(){ rows.innerHTML = ''; update(); };
+  document.getElementById('cdb').oninput = update;
+  DAYS['Commuter with earbuds'].forEach(function(r){ addRow(r[0], r[1], r[2]); });
+  update();
+})();
+</script>
+</body>
+</html>
